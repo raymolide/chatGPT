@@ -94,6 +94,7 @@ class _MyAppState extends State<MyApp> {
     return Visibility(
       visible: !isLoading,
       child: Container(
+        height: 48,
         color: botBackgroundColor,
         child: IconButton(
           icon: Icon(
@@ -178,22 +179,25 @@ class ChatMessageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool isBot = chatMessageType == ChatMessageType.bot;
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.all(Radius.circular(30)),
+        color: isBot ? botBackgroundColor : backgroundColor,
+      ),
+      margin: EdgeInsets.only(
+          top: 10, bottom: 10, right: isBot ? 50 : 10, left: isBot ? 10 : 50),
       padding: EdgeInsets.all(16),
-      color: chatMessageType == ChatMessageType.bot
-          ? botBackgroundColor
-          : backgroundColor,
       child: Row(
         children: [
           chatMessageType == ChatMessageType.bot
               ? Container(
                   margin: EdgeInsets.only(right: 16),
                   child: CircleAvatar(
-                    backgroundColor: Color.fromRGBO(16, 163, 127, 1),
+                    backgroundColor: Colors.white,
                     child: Icon(
                       Icons.person,
-                      color: Colors.red,
+                      color: Color.fromRGBO(16, 163, 127, 1),
                     ),
                   ),
                 )
@@ -203,7 +207,7 @@ class ChatMessageWidget extends StatelessWidget {
                     backgroundColor: Color.fromRGBO(16, 163, 127, 1),
                     child: Icon(
                       Icons.person,
-                      color: Colors.blue,
+                      color: Colors.white,
                     ),
                   )),
           Expanded(
