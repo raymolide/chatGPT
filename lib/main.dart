@@ -64,7 +64,8 @@ class _MyAppState extends State<MyApp> {
         backgroundColor: botBackgroundColor,
         appBar: AppBar(
           backgroundColor: botBackgroundColor,
-          title: Text("Teste ChatGPT"),
+          title: Text("Chat Bot"),
+          centerTitle: true,
         ),
         body: Column(
           children: [
