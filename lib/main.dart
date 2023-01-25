@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:chat_bot/constantes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -184,8 +185,10 @@ class _MyAppState extends State<MyApp> {
         }));
 
     if (response.statusCode == 201 || response.statusCode == 200) {
-      Map<String, dynamic> newResponse = jsonDecode(response.body);
-      print(response.body);
+      Map<String, dynamic> newResponse =
+          jsonDecode(Utf8Decoder().convert(response.body.codeUnits));
+      print(Utf8Decoder().convert(response.body.codeUnits));
+      // print(response.body);
       _onChange(newResponse['choices'][0]['text']);
       _speak();
       return newResponse['choices'][0]['text'];
@@ -288,6 +291,34 @@ class _MyAppState extends State<MyApp> {
           enabledBorder: InputBorder.none,
           errorBorder: InputBorder.none,
           disabledBorder: InputBorder.none),
+      onSubmitted: ((value) {
+        if (_textController.text.trim().toLowerCase() == "ok") {
+          _stop();
+          return;
+        }
+        setState(() {
+          messages.add(ChatMessage(
+            text: _textController.text,
+            chatMessageType: ChatMessageType.user,
+          ));
+          isLoading = true;
+        });
+
+        var input = _textController.text;
+        _textController.clear();
+        Future.delayed(Duration(milliseconds: 50)).then((value) => _scrollDown);
+
+        generateResponse(input).then((value) {
+          setState(() {
+            isLoading = false;
+            messages.add(
+                ChatMessage(text: value, chatMessageType: ChatMessageType.bot));
+          });
+        });
+        _textController.clear();
+        Future.delayed(Duration(milliseconds: 50))
+            .then((value) => _scrollDown());
+      }),
     ));
   }
 
