@@ -217,17 +217,17 @@ class _MyAppState extends State<MyApp> {
 
   Future<String> generateResponse(String prompt) async {
     final apiKey = apiSecretKey;
-    var url = Uri.https("api.openai.com", "v1/chat/completions");
+    var url = Uri.https("api.openai.com", "/v1/completions");
     final response = await http.post(url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $apiKey',
         },
         body: jsonEncode({
-          'model': 'gpt-3.5-turbo-1106',
+          'model': 'text-davinci-003',
           'prompt': prompt,
           'temperature': 0,
-          'max_tokens': 64,
+          'max_tokens': 2000,
           'top_p': 1,
           'frequency_penalty': 0.0,
           'presence_penalty': 0.0
@@ -237,7 +237,6 @@ class _MyAppState extends State<MyApp> {
       Map<String, dynamic> newResponse =
           jsonDecode(Utf8Decoder().convert(response.body.codeUnits));
       print(Utf8Decoder().convert(response.body.codeUnits));
-      // print(response.body);
       _onChange(newResponse['choices'][0]['text']);
       _speak();
       return newResponse['choices'][0]['text'];
