@@ -1,10 +1,10 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:chat_bot/constantes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:http/http.dart' as http;
+import 'package:speech_to_text/speech_to_text.dart';
 import 'ChatMessage.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -46,9 +46,58 @@ class _MyAppState extends State<MyApp> {
   double pitch = 1.0;
   double rate = 0.5;
 
+  //speech to text
+  SpeechToText stt = SpeechToText();
+  bool isListening = false;
+  double accuracy = 1.0;
+
+  initializeAudio() async {
+    stt.initialize();
+  }
+
+  _listen() {
+    if (stt.isAvailable) {
+      if (!isListening) {
+        setState(() {
+          stt.listen(onResult: ((result) {
+            accuracy = result.confidence;
+            _newVoiceText = result.recognizedWords;
+            print(_newVoiceText);
+            print('Accuracy is $accuracy');
+            isListening = true;
+          }));
+        });
+
+        messages.add(ChatMessage(
+          text: _newVoiceText!,
+          chatMessageType: ChatMessageType.user,
+        ));
+        isLoading = true;
+
+        var input = _newVoiceText!;
+        _textController.clear();
+        Future.delayed(Duration(milliseconds: 50)).then((value) => _scrollDown);
+
+        generateResponse(input).then((value) {
+          setState(() {
+            isLoading = false;
+            messages.add(
+                ChatMessage(text: value, chatMessageType: ChatMessageType.bot));
+          });
+        });
+        _newVoiceText = null;
+        Future.delayed(Duration(milliseconds: 50))
+            .then((value) => _scrollDown());
+      }
+    } else {
+      print('Permission was denied');
+    }
+  }
+
   @override
   void initState() {
     isLoading = false;
+    initializeAudio();
     super.initState();
     initTts();
   }
@@ -168,17 +217,17 @@ class _MyAppState extends State<MyApp> {
 
   Future<String> generateResponse(String prompt) async {
     final apiKey = apiSecretKey;
-    var url = Uri.https("api.openai.com", "/v1/completions");
+    var url = Uri.https("api.openai.com", "v1/chat/completions");
     final response = await http.post(url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $apiKey',
         },
         body: jsonEncode({
-          'model': 'text-davinci-003',
+          'model': 'gpt-3.5-turbo-1106',
           'prompt': prompt,
           'temperature': 0,
-          'max_tokens': 2000,
+          'max_tokens': 64,
           'top_p': 1,
           'frequency_penalty': 0.0,
           'presence_penalty': 0.0
@@ -193,8 +242,8 @@ class _MyAppState extends State<MyApp> {
       _speak();
       return newResponse['choices'][0]['text'];
     }
-
-    return 'Sorry, podemos conversar mais tarde? Agora encontro-me indisponivel.';
+    print("Error ${response.statusCode}");
+    return 'Sorry, can we talk later? Now i am not available.';
   }
 
   @override
@@ -222,10 +271,31 @@ class _MyAppState extends State<MyApp> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
-                children: [_buildInput(), _buildSubmitBtn()],
+                children: [
+                  _buildRecAudioBtn(),
+                  _buildInput(),
+                  _buildSubmitBtn()
+                ],
               ),
             )
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecAudioBtn() {
+    return Visibility(
+      visible: !isLoading,
+      child: Container(
+        height: 48,
+        color: botBackgroundColor,
+        child: IconButton(
+          icon: Icon(
+            isListening ? Icons.play_circle_fill : Icons.keyboard_voice_rounded,
+            color: Color.fromRGBO(142, 142, 160, 1),
+          ),
+          onPressed: _listen,
         ),
       ),
     );
@@ -324,6 +394,7 @@ class _MyAppState extends State<MyApp> {
 
   ListView _buildList() {
     return ListView.builder(
+        shrinkWrap: true,
         controller: _scrollController,
         itemCount: messages.length,
         itemBuilder: ((context, index) {
